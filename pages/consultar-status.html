@@ -1,0 +1,38 @@
+            <main class="consultation-container">
+                <section class="status-consultation">
+                    <header class="section-header">
+                        <h1 class="section-title">📊 Consultar Status</h1>
+                        <p class="section-subtitle">Verifique o andamento da sua solicitação</p>
+                    </header>
+
+                    <form id="status-form" class="consultation-form" role="form">
+                        <fieldset>
+                            <legend class="visually-hidden">Dados para consulta de status</legend>
+                            <div class="input-group">
+                                <label for="status-cpf" class="input-label">CPF</label>
+                                <input 
+                                    type="text" 
+                                    class="form-input" 
+                                    id="status-cpf" 
+                                    name="cpf"
+                                    required 
+                                    placeholder="000.000.000-00" 
+                                    maxlength="14"
+                                    pattern="\d{3}\.\d{3}\.\d{3}-\d{2}"
+                                    title="Digite um CPF válido no formato 000.000.000-00"
+                                    aria-describedby="cpf-help">
+                                <small id="cpf-help" class="input-help">Digite seu CPF para consultar o status da solicitação</small>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary" aria-describedby="btn-help">
+                                🔍 Consultar Status
+                            </button>
+                            <small id="btn-help" class="visually-hidden">Clique para verificar o status da sua solicitação</small>
+                        </fieldset>
+                    </form>
+
+                    <section id="status-result" class="consultation-result" style="display: none;" role="region" aria-live="polite">
+                        <!-- Resultado da consulta será inserido aqui -->
+                    </section>
+                </section>
+            </main>

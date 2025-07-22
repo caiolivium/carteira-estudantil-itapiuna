@@ -1,0 +1,319 @@
+<!-- Carteira do Estudante -->
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-lg">
+                <div class="card-header bg-primary text-white text-center">
+                    <h4><i class="fas fa-id-card me-2"></i>Carteira do Estudante</h4>
+                </div>
+                <div class="card-body">
+                    <!-- Loading spinner -->
+                    <div id="loading" class="text-center my-5">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Carregando...</span>
+                        </div>
+                        <p class="mt-3">Carregando carteira...</p>
+                    </div>
+
+                    <!-- Carteira content -->
+                    <div id="carteiraContent" class="d-none">
+                        <div class="row">
+                            <!-- Foto do estudante -->
+                            <div class="col-md-4 text-center mb-4">
+                                <div class="photo-container">
+                                    <img id="studentPhoto" src="" alt="Foto do Estudante" class="img-fluid rounded shadow" style="max-width: 200px; max-height: 250px;">
+                                </div>
+                            </div>
+
+                            <!-- Informações do estudante -->
+                            <div class="col-md-8">
+                                <div class="student-info">
+                                    <h5 class="mb-3 text-primary">Informações do Estudante</h5>
+                                    
+                                    <div class="info-item mb-2">
+                                        <strong>Nome:</strong>
+                                        <span id="studentName" class="ms-2"></span>
+                                    </div>
+                                    
+                                    <div class="info-item mb-2">
+                                        <strong>CPF:</strong>
+                                        <span id="studentCpf" class="ms-2"></span>
+                                    </div>
+                                    
+                                    <div class="info-item mb-2">
+                                        <strong>Matrícula:</strong>
+                                        <span id="studentMatricula" class="ms-2"></span>
+                                    </div>
+                                    
+                                    <div class="info-item mb-2">
+                                        <strong>Curso:</strong>
+                                        <span id="studentCurso" class="ms-2"></span>
+                                    </div>
+                                    
+                                    <div class="info-item mb-2">
+                                        <strong>Instituição:</strong>
+                                        <span id="studentInstituicao" class="ms-2"></span>
+                                    </div>
+                                    
+                                    <div class="info-item mb-3">
+                                        <strong>Status:</strong>
+                                        <span id="studentStatus" class="badge ms-2"></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <hr>
+
+                        <!-- QR Code -->
+                        <div class="row">
+                            <div class="col-12 text-center">
+                                <h6 class="mb-3">QR Code da Carteira</h6>
+                                <div id="qrcode" class="mb-3"></div>
+                                <p class="text-muted small">Escaneie o QR Code para verificar a autenticidade desta carteira</p>
+                            </div>
+                        </div>
+
+                        <!-- Ações -->
+                        <div class="row mt-4">
+                            <div class="col-12 text-center">
+                                <button id="printBtn" class="btn btn-success me-2">
+                                    <i class="fas fa-print"></i> Imprimir Carteira
+                                </button>
+                                <button id="downloadBtn" class="btn btn-info me-2">
+                                    <i class="fas fa-download"></i> Baixar QR Code
+                                </button>
+                                <a href="dashboard-estudante.html" class="btn btn-secondary">
+                                    <i class="fas fa-arrow-left"></i> Voltar ao Dashboard
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Error message -->
+                    <div id="errorMessage" class="alert alert-danger d-none">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <span id="errorText"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- QR Code Library -->
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const loading = document.getElementById('loading');
+    const content = document.getElementById('carteiraContent');
+    const errorMessage = document.getElementById('errorMessage');
+    const errorText = document.getElementById('errorText');
+
+    // Elementos dos dados do estudante
+    const studentPhoto = document.getElementById('studentPhoto');
+    const studentName = document.getElementById('studentName');
+    const studentCpf = document.getElementById('studentCpf');
+    const studentMatricula = document.getElementById('studentMatricula');
+    const studentCurso = document.getElementById('studentCurso');
+    const studentInstituicao = document.getElementById('studentInstituicao');
+    const studentStatus = document.getElementById('studentStatus');
+
+    // Botões de ação
+    const printBtn = document.getElementById('printBtn');
+    const downloadBtn = document.getElementById('downloadBtn');
+
+    // Verificar se o usuário está logado
+    const studentData = JSON.parse(localStorage.getItem('studentData'));
+    
+    if (!studentData) {
+        showError('Você precisa estar logado para ver sua carteira.');
+        return;
+    }
+
+    // Carregar dados da carteira
+    loadCarteira(studentData.cpf);
+
+    function loadCarteira(cpf) {
+        fetch('/api/students/status', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ cpf: cpf })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.student) {
+                displayCarteira(data.student);
+            } else {
+                showError(data.message || 'Erro ao carregar dados da carteira.');
+            }
+        })
+        .catch(error => {
+            console.error('Erro:', error);
+            showError('Erro ao conectar com o servidor.');
+        })
+        .finally(() => {
+            loading.classList.add('d-none');
+        });
+    }
+
+    function displayCarteira(student) {
+        // Preencher dados do estudante
+        studentPhoto.src = student.foto_file_url || '/images/default-avatar.svg';
+        studentPhoto.onerror = () => {
+            studentPhoto.src = '/images/default-avatar.svg';
+        };
+        
+        studentName.textContent = student.nome;
+        studentCpf.textContent = formatCPF(student.cpf);
+        studentMatricula.textContent = student.matricula;
+        studentCurso.textContent = student.curso;
+        studentInstituicao.textContent = student.instituicao;
+        
+        // Status com cores
+        const statusBadge = getStatusBadge(student.status);
+        studentStatus.className = `badge ms-2 ${statusBadge.class}`;
+        studentStatus.textContent = statusBadge.text;
+
+        // Apenas mostrar carteira se aprovado
+        if (student.status !== 'approved') {
+            showError('Sua carteira ainda não foi aprovada. Status atual: ' + statusBadge.text);
+            return;
+        }
+
+        // Gerar QR Code
+        generateQRCode(student);
+
+        // Mostrar conteúdo
+        content.classList.remove('d-none');
+
+        // Configurar botões
+        setupButtons(student);
+    }
+
+    function generateQRCode(student) {
+        const qrData = {
+            id: student.id,
+            nome: student.nome,
+            cpf: student.cpf,
+            matricula: student.matricula,
+            curso: student.curso,
+            instituicao: student.instituicao,
+            status: student.status,
+            url: `${window.location.origin}/api/students/verify/${student.id}`,
+            timestamp: new Date().toISOString()
+        };
+
+        QRCode.toCanvas(document.getElementById('qrcode'), JSON.stringify(qrData), {
+            width: 200,
+            margin: 2,
+            color: {
+                dark: '#000000',
+                light: '#FFFFFF'
+            }
+        }, function (error) {
+            if (error) {
+                console.error('Erro ao gerar QR Code:', error);
+            }
+        });
+    }
+
+    function setupButtons(student) {
+        // Botão de imprimir
+        printBtn.addEventListener('click', function() {
+            window.print();
+        });
+
+        // Botão de download QR Code
+        downloadBtn.addEventListener('click', function() {
+            const canvas = document.querySelector('#qrcode canvas');
+            if (canvas) {
+                const link = document.createElement('a');
+                link.download = `carteira-qrcode-${student.matricula}.png`;
+                link.href = canvas.toDataURL();
+                link.click();
+            }
+        });
+    }
+
+    function formatCPF(cpf) {
+        return cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+    }
+
+    function getStatusBadge(status) {
+        switch (status) {
+            case 'approved':
+                return { class: 'bg-success', text: 'Aprovado' };
+            case 'pending':
+                return { class: 'bg-warning text-dark', text: 'Pendente' };
+            case 'rejected':
+                return { class: 'bg-danger', text: 'Rejeitado' };
+            default:
+                return { class: 'bg-secondary', text: 'Desconhecido' };
+        }
+    }
+
+    function showError(message) {
+        errorText.textContent = message;
+        errorMessage.classList.remove('d-none');
+        content.classList.add('d-none');
+    }
+});
+</script>
+
+<style>
+.card {
+    border: none;
+    border-radius: 15px;
+}
+
+.photo-container {
+    position: relative;
+}
+
+.photo-container img {
+    border: 3px solid #0d6efd;
+}
+
+.info-item {
+    padding: 8px 0;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.info-item:last-child {
+    border-bottom: none;
+}
+
+#qrcode {
+    display: inline-block;
+    padding: 15px;
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+@media print {
+    .btn, .card-header, nav, footer {
+        display: none !important;
+    }
+    
+    .card {
+        box-shadow: none !important;
+        border: 2px solid #000 !important;
+    }
+    
+    .container {
+        max-width: 100% !important;
+    }
+}
+
+@media (max-width: 768px) {
+    .photo-container img {
+        max-width: 150px;
+        max-height: 200px;
+    }
+}
+</style>

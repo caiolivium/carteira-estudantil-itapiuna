@@ -1,0 +1,247 @@
+<!-- Dashboard do Estudante -->
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card slide-up">
+                <div class="card-header bg-primary text-white">
+                    <h2 class="card-title mb-0">🎓 Minha Carteira Digital</h2>
+                    <p class="card-subtitle mb-0 mt-1">Bem-vindo à sua área do estudante</p>
+                </div>
+
+                <div class="card-body">
+                    <!-- Loading -->
+                    <div id="loading" class="text-center my-5">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Carregando...</span>
+                        </div>
+                    </div>
+
+                    <!-- Student Info -->
+                    <div id="studentInfo" class="d-none">
+                        <div class="row mb-4">
+                            <div class="col-md-3 text-center">
+                                <img id="studentPhoto" src="" alt="Foto do Estudante" class="img-fluid rounded-circle shadow" style="width: 120px; height: 120px; object-fit: cover;">
+                            </div>
+                            <div class="col-md-9">
+                                <h4 id="studentName" class="text-primary"></h4>
+                                <div class="row">
+                                    <div class="col-sm-6">
+                                        <p><strong>CPF:</strong> <span id="studentCpf"></span></p>
+                                        <p><strong>Matrícula:</strong> <span id="studentMatricula"></span></p>
+                                    </div>
+                                    <div class="col-sm-6">
+                                        <p><strong>Curso:</strong> <span id="studentCurso"></span></p>
+                                        <p><strong>Status:</strong> <span id="studentStatus" class="badge"></span></p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Quick Actions -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h5>Ações Rápidas</h5>
+                                <div class="d-flex flex-wrap gap-3">
+                                    <a href="/carteira" id="carteiraBtn" class="btn btn-primary">
+                                        <i class="fas fa-id-card"></i> Ver Carteira Digital
+                                    </a>
+                                    <a href="/consultar-status" class="btn btn-info">
+                                        <i class="fas fa-search"></i> Consultar Status
+                                    </a>
+                                    <button id="logoutBtn" class="btn btn-outline-danger">
+                                        <i class="fas fa-sign-out-alt"></i> Sair
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Status Alert -->
+                        <div id="statusAlert" class="alert d-none" role="alert">
+                            <i class="fas fa-info-circle"></i>
+                            <span id="statusMessage"></span>
+                        </div>
+                    </div>
+
+                    <!-- Error message -->
+                    <div id="errorMessage" class="alert alert-danger d-none">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <span id="errorText"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const loading = document.getElementById('loading');
+    const studentInfo = document.getElementById('studentInfo');
+    const errorMessage = document.getElementById('errorMessage');
+    const errorText = document.getElementById('errorText');
+    
+    // Elementos dos dados do estudante
+    const studentPhoto = document.getElementById('studentPhoto');
+    const studentName = document.getElementById('studentName');
+    const studentCpf = document.getElementById('studentCpf');
+    const studentMatricula = document.getElementById('studentMatricula');
+    const studentCurso = document.getElementById('studentCurso');
+    const studentStatus = document.getElementById('studentStatus');
+    
+    const carteiraBtn = document.getElementById('carteiraBtn');
+    const statusAlert = document.getElementById('statusAlert');
+    const statusMessage = document.getElementById('statusMessage');
+    const logoutBtn = document.getElementById('logoutBtn');
+
+    // Verificar se o usuário está logado
+    const studentData = JSON.parse(localStorage.getItem('studentData'));
+    
+    if (!studentData) {
+        window.location.href = '/entrar';
+        return;
+    }
+
+    // Carregar dados do estudante
+    loadStudentData(studentData.cpf);
+
+    function loadStudentData(cpf) {
+        fetch('/api/students/status', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ cpf: cpf })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.student) {
+                displayStudentData(data.student);
+            } else {
+                showError(data.message || 'Erro ao carregar dados do estudante.');
+            }
+        })
+        .catch(error => {
+            console.error('Erro:', error);
+            showError('Erro ao conectar com o servidor.');
+        })
+        .finally(() => {
+            loading.classList.add('d-none');
+        });
+    }
+
+    function displayStudentData(student) {
+        // Preencher dados do estudante
+        studentPhoto.src = student.foto_file_url || '/images/default-avatar.svg';
+        studentPhoto.onerror = () => {
+            studentPhoto.src = '/images/default-avatar.svg';
+        };
+        
+        studentName.textContent = student.nome;
+        studentCpf.textContent = formatCPF(student.cpf);
+        studentMatricula.textContent = student.matricula;
+        studentCurso.textContent = student.curso;
+        
+        // Status com cores
+        const statusBadge = getStatusBadge(student.status);
+        studentStatus.className = `badge ${statusBadge.class}`;
+        studentStatus.textContent = statusBadge.text;
+
+        // Mostrar alerta baseado no status
+        showStatusAlert(student.status);
+
+        // Habilitar/desabilitar botão da carteira
+        if (student.status === 'approved') {
+            carteiraBtn.classList.remove('disabled');
+        } else {
+            carteiraBtn.classList.add('disabled');
+            carteiraBtn.href = '#';
+        }
+
+        studentInfo.classList.remove('d-none');
+    }
+
+    function showStatusAlert(status) {
+        let alertClass, message;
+        
+        switch (status) {
+            case 'approved':
+                alertClass = 'alert-success';
+                message = 'Parabéns! Sua carteira foi aprovada e já está disponível para visualização.';
+                break;
+            case 'pending':
+                alertClass = 'alert-warning';
+                message = 'Sua solicitação está sendo analisada. Aguarde a aprovação para acessar sua carteira.';
+                break;
+            case 'rejected':
+                alertClass = 'alert-danger';
+                message = 'Sua solicitação foi rejeitada. Entre em contato conosco para mais informações.';
+                break;
+            default:
+                return;
+        }
+        
+        statusAlert.className = `alert ${alertClass}`;
+        statusMessage.textContent = message;
+        statusAlert.classList.remove('d-none');
+    }
+
+    function formatCPF(cpf) {
+        return cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+    }
+
+    function getStatusBadge(status) {
+        switch (status) {
+            case 'approved':
+                return { class: 'bg-success', text: 'Aprovado' };
+            case 'pending':
+                return { class: 'bg-warning text-dark', text: 'Pendente' };
+            case 'rejected':
+                return { class: 'bg-danger', text: 'Rejeitado' };
+            default:
+                return { class: 'bg-secondary', text: 'Desconhecido' };
+        }
+    }
+
+    function showError(message) {
+        errorText.textContent = message;
+        errorMessage.classList.remove('d-none');
+    }
+
+    // Logout
+    logoutBtn.addEventListener('click', function() {
+        localStorage.removeItem('studentData');
+        window.location.href = '/entrar';
+    });
+});
+</script>
+
+<style>
+.slide-up {
+    animation: slideUp 0.5s ease-out;
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.card {
+    border: none;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.btn.disabled {
+    pointer-events: none;
+    opacity: 0.6;
+}
+
+#studentPhoto {
+    border: 3px solid #0d6efd;
+}
+</style>

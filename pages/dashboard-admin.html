@@ -1,0 +1,45 @@
+            <div class="card slide-up">
+                <div class="card-header">
+                    <h2 class="card-title">👨‍💼 Painel Administrativo</h2>
+                    <p class="card-subtitle">Gerenciar solicitações de carteiras</p>
+                </div>
+
+                <div class="dashboard-stats">
+                    <div class="stat-card">
+                        <div class="stat-number" id="total-requests">0</div>
+                        <div class="stat-label">Total de Solicitações</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="pending-requests">0</div>
+                        <div class="stat-label">Pendentes</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="approved-requests">0</div>
+                        <div class="stat-label">Aprovadas</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="rejected-requests">0</div>
+                        <div class="stat-label">Rejeitadas</div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3 style="margin-bottom: 1rem;">📋 Solicitações Pendentes</h3>
+                    <div style="overflow-x: auto;">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Nome</th>
+                                    <th>CPF</th>
+                                    <th>Instituição</th>
+                                    <th>Status</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="requests-table">
+                                <!-- Solicitações serão inseridas aqui -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>

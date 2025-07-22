@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Sistema digital para emissão de carteiras de estudante em Itapiúna-CE. Processo rápido, seguro e moderno.">
+    <meta name="keywords" content="carteira estudante, digital, Itapiúna, Ceará, estudante">
+    <meta name="author" content="Prefeitura de Itapiúna-CE">
+    <title>Carteira de Estudante Digital - Itapiúna-CE</title>
+    <link rel="stylesheet" href="css/styles.css">
+    
+    <!-- Favicon -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='0.9em' font-size='90'>🎓</text></svg>">
+</head>
+<body>
+    <!-- Skip to main content for accessibility -->
+    <a href="#main-content" class="skip-link">Pular para o conteúdo principal</a>
+    
+    <!-- Header -->
+    <header class="header" role="banner">
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">
+                    <div class="logo-icon" aria-hidden="true">CE</div>
+                    <h2 class="logo-text">Itapiúna Digital</h2>
+                </div>
+                <div class="header-actions">
+                    <button class="theme-toggle" onclick="toggleTheme()" aria-label="Alternar tema escuro/claro" title="Alternar tema">🌓</button>
+                    <div id="user-info" class="user-info" style="display: none;" role="complementary">
+                        <span id="user-name" class="user-name"></span>
+                        <button class="btn btn-secondary" onclick="logout()" aria-label="Sair do sistema">Sair</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Navigation -->
+    <nav class="nav" role="navigation" aria-label="Navegação principal">
+        <div class="container">
+            <ul class="nav-buttons" id="nav-buttons" role="menubar">
+                <li role="none"><a href="#" data-page="home" class="nav-btn active" role="menuitem" aria-label="Ir para página inicial">Início</a></li>
+                <li role="none"><a href="#" data-page="cadastrar" class="nav-btn" role="menuitem" aria-label="Cadastrar nova carteira">Cadastrar</a></li>
+                <li role="none"><a href="#" data-page="entrar" class="nav-btn" role="menuitem" aria-label="Fazer login no sistema">Entrar</a></li>
+                <li role="none"><a href="#" data-page="consultar-status" class="nav-btn" role="menuitem" aria-label="Consultar status da solicitação">Consultar Status</a></li>
+                <li role="none"><a href="#" data-page="sobre" class="nav-btn" role="menuitem" aria-label="Sobre o sistema">Sobre</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main" id="main-content" role="main">
+        <div class="container" id="page-container">
+            <!-- Conteúdo será carregado dinamicamente aqui -->
+            <div class="loading">
+                <div class="spinner"></div>
+                <p>Carregando...</p>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer" role="contentinfo">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-info">
+                    <p>&copy; 2025 Prefeitura de Itapiúna-CE. Todos os direitos reservados.</p>
+                    <p class="footer-description">Sistema de Carteira Digital de Estudante</p>
+                </div>
+                <div class="footer-links">
+                    <a href="#" data-page="sobre" class="footer-link">Sobre</a>
+                    <a href="#" class="footer-link">Contato</a>
+                    <a href="#" class="footer-link">Privacidade</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- JavaScript Principal -->
+    <script>
+        class CarteiraDigitalApp {
+            constructor() {
+                this.currentPage = 'home';
+                this.userData = this.loadUserData();
+                this.init();
+            }
+
+            init() {
+                this.setupNavigation();
+                this.setupTheme();
+                this.loadPage('home');
+                this.updateUI();
+            }
+
+            // Sistema de navegação
+            setupNavigation() {
+                document.addEventListener('click', (e) => {
+                    const pageLink = e.target.closest('[data-page]');
+                    if (pageLink) {
+                        e.preventDefault();
+                        const pageName = pageLink.getAttribute('data-page');
+                        this.loadPage(pageName);
+                    }
+                });
+            }
+
+            async loadPage(pageName) {
+                try {
+                    console.log(`📄 Carregando página: ${pageName}`);
+                    
+                    const container = document.getElementById('page-container');
+                    container.innerHTML = '<div class="loading"><div class="spinner"></div><p>Carregando...</p></div>';
+                    
+                    const response = await fetch(`pages/${pageName}.html`);
+                    if (!response.ok) throw new Error(`Página não encontrada: ${pageName}`);
+                    
+                    const content = await response.text();
+                    container.innerHTML = content;
+                    
+                    this.currentPage = pageName;
+                    this.updateActiveNavigation(pageName);
+                    this.setupPageForms();
+                    
+                    console.log(`✅ Página ${pageName} carregada`);
+                } catch (error) {
+                    console.error(`❌ Erro ao carregar página ${pageName}:`, error);
+                    document.getElementById('page-container').innerHTML = `
+                        <div class="card">
+                            <h2>❌ Erro ao carregar página</h2>
+                            <p>Não foi possível carregar a página "${pageName}".</p>
+                            <button class="btn btn-primary" onclick="app.loadPage('home')">Voltar ao início</button>
+                        </div>
+                    `;
+                }
+            }
+
+            updateActiveNavigation(pageName) {
+                document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+                document.querySelectorAll(`[data-page="${pageName}"]`).forEach(btn => btn.classList.add('active'));
+            }
+
+            // Configurar formulários da página atual
+            setupPageForms() {
+                const registerForm = document.getElementById('register-form');
+                if (registerForm) this.setupRegisterForm(registerForm);
+
+                const loginForm = document.getElementById('login-form');
+                if (loginForm) this.setupLoginForm(loginForm);
+
+                const statusForm = document.getElementById('status-form');
+                if (statusForm) this.setupStatusForm(statusForm);
+
+                const adminForm = document.getElementById('admin-login-form');
+                if (adminForm) this.setupAdminForm(adminForm);
+
+                this.setupFileUploads();
+            }
+
+            setupRegisterForm(form) {
+                form.addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    this.handleRegister(form);
+                });
+
+                const cpfInput = form.querySelector('#cpf');
+                if (cpfInput) {
+                    cpfInput.addEventListener('input', (e) => {
+                        e.target.value = this.formatCPF(e.target.value);
+                    });
+                }
+
+                const phoneInput = form.querySelector('#telefone');
+                if (phoneInput) {
+                    phoneInput.addEventListener('input', (e) => {
+                        e.target.value = this.formatPhone(e.target.value);
+                    });
+                }
+            }
+
+            setupLoginForm(form) {
+                form.addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    this.handleLogin(form);
+                });
+
+                const cpfInput = form.querySelector('#login-cpf');
+                if (cpfInput) {
+                    cpfInput.addEventListener('input', (e) => {
+                        e.target.value = this.formatCPF(e.target.value);
+                    });
+                }
+            }
+
+            setupStatusForm(form) {
+                form.addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    this.handleStatusCheck(form);
+                });
+
+                const cpfInput = form.querySelector('#status-cpf');
+                if (cpfInput) {
+                    cpfInput.addEventListener('input', (e) => {
+                        e.target.value = this.formatCPF(e.target.value);
+                    });
+                }
+            }
+
+            setupAdminForm(form) {
+                form.addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    this.handleAdminLogin(form);
+                });
+            }
+
+            setupFileUploads() {
+                const matriculaFile = document.getElementById('matricula-file');
+                if (matriculaFile) {
+                    matriculaFile.addEventListener('change', (e) => {
+                        this.handleFileSelect(e, 'matricula-file-name', 'Comprovante de matrícula');
+                    });
+                }
+
+                const fotoFile = document.getElementById('foto-file');
+                if (fotoFile) {
+                    fotoFile.addEventListener('change', (e) => {
+                        this.handleFileSelect(e, 'foto-file-name', 'Foto 3x4');
+                    });
+                }
+            }
+
+            // Handlers dos formulários
+            async handleRegister(form) {
+                const formData = new FormData(form);
+                const data = Object.fromEntries(formData);
+
+                if (!this.validateCPF(data.cpf)) {
+                    this.showNotification('CPF inválido', 'error');
+                    return;
+                }
+
+                const student = {
+                    id: Date.now(),
+                    ...data,
+                    status: 'pendente',
+                    createdAt: new Date().toISOString()
+                };
+
+                const students = this.getStoredData('students') || [];
+                students.push(student);
+                this.setStoredData('students', students);
+
+                this.showNotification('Solicitação enviada com sucesso!', 'success');
+                setTimeout(() => this.loadPage('consultar-status'), 2000);
+            }
+
+            async handleLogin(form) {
+                const formData = new FormData(form);
+                const cpf = formData.get('login-cpf') || document.getElementById('login-cpf').value;
+
+                const students = this.getStoredData('students') || this.getTestStudents();
+                const student = students.find(s => s.cpf === cpf && s.status === 'aprovado');
+
+                if (student) {
+                    this.userData = student;
+                    this.saveUserData();
+                    this.updateUI();
+                    this.showNotification(`Bem-vindo, ${student.nome}!`, 'success');
+                    this.loadPage('dashboard-estudante');
+                } else {
+                    this.showNotification('CPF não encontrado ou carteira não aprovada', 'error');
+                }
+            }
+
+            async handleStatusCheck(form) {
+                const formData = new FormData(form);
+                const cpf = formData.get('status-cpf') || document.getElementById('status-cpf').value;
+
+                const students = this.getStoredData('students') || this.getTestStudents();
+                const student = students.find(s => s.cpf === cpf);
+
+                const resultDiv = document.getElementById('status-result');
+                if (resultDiv) {
+                    if (student) {
+                        resultDiv.innerHTML = this.getStatusHTML(student);
+                        resultDiv.style.display = 'block';
+                    } else {
+                        resultDiv.innerHTML = '<div class="status-error">❌ CPF não encontrado</div>';
+                        resultDiv.style.display = 'block';
+                    }
+                }
+            }
+
+            async handleAdminLogin(form) {
+                const formData = new FormData(form);
+                const user = formData.get('admin-user');
+                const password = formData.get('admin-password');
+
+                if (user === 'admin' && password === '123456') {
+                    this.userData = { tipo: 'admin', nome: 'Administrador' };
+                    this.saveUserData();
+                    this.updateUI();
+                    this.hideAdminLogin();
+                    this.showNotification('Login admin realizado!', 'success');
+                    this.loadPage('dashboard-admin');
+                } else {
+                    this.showNotification('Usuário ou senha incorretos', 'error');
+                }
+            }
+
+            // Funções auxiliares
+            formatCPF(value) {
+                return value
+                    .replace(/\D/g, '')
+                    .replace(/(\d{3})(\d)/, '$1.$2')
+                    .replace(/(\d{3})(\d)/, '$1.$2')
+                    .replace(/(\d{3})(\d{1,2})/, '$1-$2')
+                    .replace(/(-\d{2})\d+?$/, '$1');
+            }
+
+            formatPhone(value) {
+                return value
+                    .replace(/\D/g, '')
+                    .replace(/(\d{2})(\d)/, '($1) $2')
+                    .replace(/(\d{5})(\d)/, '$1-$2')
+                    .replace(/(-\d{4})\d+?$/, '$1');
+            }
+
+            validateCPF(cpf) {
+                cpf = cpf.replace(/[^\d]/g, '');
+                return cpf.length === 11;
+            }
+
+            handleFileSelect(event, displayId, type) {
+                const file = event.target.files[0];
+                const display = document.getElementById(displayId);
+                
+                if (file && display) {
+                    display.textContent = `✅ ${type}: ${file.name}`;
+                }
+            }
+
+            getStatusHTML(student) {
+                const statusMap = {
+                    'pendente': { icon: '⏳', text: 'Pendente', class: 'status-pending' },
+                    'aprovado': { icon: '✅', text: 'Aprovado', class: 'status-approved' },
+                    'rejeitado': { icon: '❌', text: 'Rejeitado', class: 'status-rejected' }
+                };
+
+                const status = statusMap[student.status] || statusMap['pendente'];
+
+                return `
+                    <div class="status-card ${status.class}">
+                        <h3>${status.icon} Status: ${status.text}</h3>
+                        <p><strong>Nome:</strong> ${student.nome}</p>
+                        <p><strong>CPF:</strong> ${student.cpf}</p>
+                        <p><strong>Instituição:</strong> ${student.instituicao || 'N/A'}</p>
+                        <p><strong>Curso:</strong> ${student.curso || 'N/A'}</p>
+                        ${student.status === 'aprovado' ? 
+                            `<button class="btn btn-primary" onclick="app.loadPage('entrar')">🚀 Acessar Carteira</button>` : 
+                            ''
+                        }
+                    </div>
+                `;
+            }
+
+            showNotification(message, type = 'info') {
+                const notification = document.createElement('div');
+                notification.className = `notification notification-${type}`;
+                notification.textContent = message;
+                
+                document.body.appendChild(notification);
+                
+                setTimeout(() => notification.classList.add('show'), 100);
+                
+                setTimeout(() => {
+                    notification.classList.remove('show');
+                    setTimeout(() => notification.remove(), 300);
+                }, 4000);
+            }
+
+            setupTheme() {
+                const themeBtn = document.querySelector('.theme-toggle');
+                if (themeBtn) {
+                    themeBtn.addEventListener('click', this.toggleTheme.bind(this));
+                }
+                
+                const savedTheme = localStorage.getItem('theme');
+                if (savedTheme) {
+                    document.body.classList.toggle('dark-theme', savedTheme === 'dark');
+                }
+            }
+
+            toggleTheme() {
+                document.body.classList.toggle('dark-theme');
+                const isDark = document.body.classList.contains('dark-theme');
+                localStorage.setItem('theme', isDark ? 'dark' : 'light');
+            }
+
+            loadUserData() {
+                const data = localStorage.getItem('userData');
+                return data ? JSON.parse(data) : null;
+            }
+
+            saveUserData() {
+                localStorage.setItem('userData', JSON.stringify(this.userData));
+            }
+
+            getStoredData(key) {
+                const data = localStorage.getItem(key);
+                return data ? JSON.parse(data) : null;
+            }
+
+            setStoredData(key, data) {
+                localStorage.setItem(key, JSON.stringify(data));
+            }
+
+            getTestStudents() {
+                return [
+                    {
+                        id: 1,
+                        nome: 'João Silva Santos',
+                        cpf: '123.456.789-01',
+                        email: 'joao@email.com',
+                        telefone: '(85) 99999-1234',
+                        instituicao: 'UECE',
+                        curso: 'Engenharia',
+                        matricula: '2024001',
+                        status: 'aprovado'
+                    },
+                    {
+                        id: 2,
+                        nome: 'Ana Paula Mendes',
+                        cpf: '555.666.777-88',
+                        email: 'ana@email.com',
+                        telefone: '(85) 99999-5678',
+                        instituicao: 'UFC',
+                        curso: 'Medicina',
+                        matricula: '2024002',
+                        status: 'aprovado'
+                    },
+                    {
+                        id: 3,
+                        nome: 'Maria Oliveira Costa',
+                        cpf: '987.654.321-00',
+                        email: 'maria@email.com',
+                        telefone: '(85) 99999-9999',
+                        instituicao: 'UNIFOR',
+                        curso: 'Direito',
+                        matricula: '2024003',
+                        status: 'pendente'
+                    }
+                ];
+            }
+
+            updateUI() {
+                const userInfo = document.getElementById('user-info');
+                const userName = document.getElementById('user-name');
+                
+                if (this.userData && userInfo && userName) {
+                    userName.textContent = this.userData.nome;
+                    userInfo.style.display = 'flex';
+                } else if (userInfo) {
+                    userInfo.style.display = 'none';
+                }
+            }
+
+            logout() {
+                this.userData = null;
+                localStorage.removeItem('userData');
+                this.updateUI();
+                this.showNotification('Logout realizado com sucesso', 'success');
+                this.loadPage('home');
+            }
+        }
+
+        // Funções globais
+        function toggleTheme() {
+            if (window.app) window.app.toggleTheme();
+        }
+
+        function logout() {
+            if (window.app) window.app.logout();
+        }
+
+        function showAdminLogin() {
+            const modal = document.getElementById('admin-login-modal');
+            if (modal) modal.style.display = 'block';
+        }
+
+        function hideAdminLogin() {
+            const modal = document.getElementById('admin-login-modal');
+            if (modal) modal.style.display = 'none';
+        }
+
+        // Inicializar aplicação
+        document.addEventListener('DOMContentLoaded', () => {
+            window.app = new CarteiraDigitalApp();
+            console.log('🚀 Aplicação iniciada!');
+        });
+    </script>
+</body>
+</html>
